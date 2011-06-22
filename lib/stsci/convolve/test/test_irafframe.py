@@ -2,7 +2,7 @@
 from __future__ import division
 import numpy as np
 import nose
-from convolve.iraf_frame import *
+from stsci.convolve.iraf_frame import *
 from nose.tools import *
 
 def test_frame_nearest():

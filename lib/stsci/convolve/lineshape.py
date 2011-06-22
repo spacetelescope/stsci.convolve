@@ -43,7 +43,7 @@ __version__ = "$Revision: 1.1 $"[11:-2]
 
 
 import numpy as num
-from convolve._lineshape import *
+from stsci.convolve._lineshape import *
 
 
 class Profile(object):

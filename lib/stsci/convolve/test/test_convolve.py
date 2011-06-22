@@ -5,10 +5,10 @@ from __future__ import division
 import numpy as np
 import nose
 from nose.tools import *
-import convolve
-from convolve import VALID, SAME, FULL
-import convolve._correlate as _correlate
-import convolve.iraf_frame as iraf_frame
+import stsci.convolve as convolve
+from stsci.convolve import VALID, SAME, FULL
+import stsci.convolve._correlate as _correlate
+import stsci.convolve.iraf_frame as iraf_frame
 import numpy.fft as dft
 
 
