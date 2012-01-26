@@ -6,9 +6,7 @@ import numpy as np
 import nose
 from nose.tools import *
 import stsci.convolve as convolve
-from stsci.convolve import VALID, SAME, FULL
-import stsci.convolve._correlate as _correlate
-import stsci.convolve.iraf_frame as iraf_frame
+from .. import VALID, SAME, FULL
 import numpy.fft as dft
 
 
@@ -61,12 +59,7 @@ def test_correlate9():
     assert_equal(result.all(),test.all())
 
 def test_correlate10():
-    test = False
-    try:
-        result = convolve.correlate(np.arange(8), 1+1j)
-    except TypeError:
-        test=True
-    assert_equal(test,True)
+    assert_raises(TypeError, convolve.correlate, np.arange(8), 1+1j)
 
 def test_convolve1():
     """

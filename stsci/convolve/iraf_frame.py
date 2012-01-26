@@ -1,18 +1,17 @@
-import numpy as num
-
-"""This module defines the function frame() which creates
-a framed copy of an input array with the boundary pixels
-defined according to the IRAF boundary modes: 'nearest',
-'reflect', 'wrap', and 'constant.'
+"""This module defines the function frame() which creates a framed copy of an
+input array with the boundary pixels defined according to the IRAF boundary
+modes: 'nearest', 'reflect', 'wrap', and 'constant.'
 """
 
+import numpy as np
+
+
 def frame_nearest(a, shape, cval=None):
+    """frame_nearest creates an oversized copy of 'a' with new 'shape' and the
+    contents of 'a' in the center.  The boundary pixels are copied from the
+    nearest edge pixel in 'a'.
 
-    """frame_nearest creates an oversized copy of 'a' with new 'shape'
-    and the contents of 'a' in the center.  The boundary pixels are
-    copied from the nearest edge pixel in 'a'.
-
-    >>> a = num.arange(16)
+    >>> a = np.arange(16)
     >>> a.shape=(4,4)
     >>> frame_nearest(a, (8,8))
     array([[ 0,  0,  0,  1,  2,  3,  3,  3],
@@ -26,8 +25,8 @@ def frame_nearest(a, shape, cval=None):
 
     """
 
-    b = num.zeros(shape, dtype=a.dtype)
-    delta = (num.array(b.shape) - num.array(a.shape))
+    b = np.zeros(shape, dtype=a.dtype)
+    delta = (np.array(b.shape) - np.array(a.shape))
     dy = delta[0] // 2
     dx = delta[1] // 2
     my = a.shape[0] + dy
@@ -46,12 +45,11 @@ def frame_nearest(a, shape, cval=None):
     return b
 
 def frame_reflect(a, shape, cval=None):
+    """frame_reflect creates an oversized copy of 'a' with new 'shape' and the
+    contents of 'a' in the center.  The boundary pixels are reflected from the
+    nearest edge pixels in 'a'.
 
-    """frame_reflect creates an oversized copy of 'a' with new 'shape'
-    and the contents of 'a' in the center.  The boundary pixels are
-    reflected from the nearest edge pixels in 'a'.
-
-    >>> a = num.arange(16)
+    >>> a = np.arange(16)
     >>> a.shape = (4,4)
     >>> frame_reflect(a, (8,8))
     array([[ 5,  4,  4,  5,  6,  7,  7,  6],
@@ -64,8 +62,8 @@ def frame_reflect(a, shape, cval=None):
            [ 9,  8,  8,  9, 10, 11, 11, 10]])
     """
 
-    b = num.zeros(shape, dtype=a.dtype)
-    delta = (num.array(b.shape) - num.array(a.shape))
+    b = np.zeros(shape, dtype=a.dtype)
+    delta = (np.array(b.shape) - np.array(a.shape))
     dy = delta[0] // 2
     dx = delta[1] // 2
     my = a.shape[0] + dy
@@ -84,12 +82,13 @@ def frame_reflect(a, shape, cval=None):
     b[my:,mx:]    = a[-sy:,-sx:][::-1,::-1]        # bottomright
     return b
 
-def frame_wrap(a, shape, cval=None):
-    """frame_wrap creates an oversized copy of 'a' with new 'shape'
-    and the contents of 'a' in the center.  The boundary pixels are
-    wrapped around to the opposite edge pixels in 'a'.
 
-    >>> a = num.arange(16)
+def frame_wrap(a, shape, cval=None):
+    """frame_wrap creates an oversized copy of 'a' with new 'shape' and the
+    contents of 'a' in the center.  The boundary pixels are wrapped around to
+    the opposite edge pixels in 'a'.
+
+    >>> a = np.arange(16)
     >>> a.shape=(4,4)
     >>> frame_wrap(a, (8,8))
     array([[10, 11,  8,  9, 10, 11,  8,  9],
@@ -103,8 +102,8 @@ def frame_wrap(a, shape, cval=None):
 
     """
 
-    b = num.zeros(shape, dtype=a.dtype)
-    delta = (num.array(b.shape) - num.array(a.shape))
+    b = np.zeros(shape, dtype=a.dtype)
+    delta = (np.array(b.shape) - np.array(a.shape))
     dy = delta[0] // 2
     dx = delta[1] // 2
     my = a.shape[0] + dy
@@ -123,12 +122,13 @@ def frame_wrap(a, shape, cval=None):
     b[my:,mx:]    = a[:sy, :sx]          # bottomright
     return b
 
-def frame_constant(a, shape, cval=0):
-    """frame_nearest creates an oversized copy of 'a' with new 'shape'
-    and the contents of 'a' in the center.  The boundary pixels are
-    copied from the nearest edge pixel in 'a'.
 
-    >>> a = num.arange(16)
+def frame_constant(a, shape, cval=0):
+    """frame_nearest creates an oversized copy of 'a' with new 'shape' and the
+    contents of 'a' in the center.  The boundary pixels are copied from the
+    nearest edge pixel in 'a'.
+
+    >>> a = np.arange(16)
     >>> a.shape=(4,4)
     >>> frame_constant(a, (8,8), cval=42)
     array([[42, 42, 42, 42, 42, 42, 42, 42],
@@ -142,8 +142,8 @@ def frame_constant(a, shape, cval=0):
 
     """
 
-    b = num.zeros(shape, dtype=a.dtype)
-    delta = (num.array(b.shape) - num.array(a.shape))
+    b = np.zeros(shape, dtype=a.dtype)
+    delta = (np.array(b.shape) - np.array(a.shape))
     dy = delta[0] // 2
     dx = delta[1] // 2
     my = a.shape[0] + dy
@@ -160,16 +160,19 @@ def frame_constant(a, shape, cval=0):
     b[my:, mx:]   = cval             # bottomright
     return b
 
-_frame_dispatch = { "nearest": frame_nearest,
-                    "reflect": frame_reflect,
-                    "wrap": frame_wrap,
-                    "constant" : frame_constant }
+
+_frame_dispatch = {
+    "nearest": frame_nearest,
+    "reflect": frame_reflect,
+    "wrap": frame_wrap,
+    "constant" : frame_constant
+}
+
 
 def frame(a, shape, mode="nearest", cval=0.0):
-
-    """frame creates an oversized copy of 'a' with new 'shape', with
-    extra pixels being supplied according to IRAF boundary mode,
-    'mode'.  """
+    """frame creates an oversized copy of 'a' with new 'shape', with extra
+    pixels being supplied according to IRAF boundary mode, 'mode'.
+    """
 
     try:
         f = _frame_dispatch[mode]
@@ -178,18 +181,21 @@ def frame(a, shape, mode="nearest", cval=0.0):
 
     return f(a, shape, cval)
 
+
 def unframe(a, shape):
+    """unframe extracts the center slice of framed array 'a' which had 'shape'
+    prior to framing.
+    """
 
-    """unframe extracts the center slice of framed array 'a' which had
-    'shape' prior to framing."""
-
-    delta = num.array(a.shape) - num.array(shape)
+    delta = np.array(a.shape) - np.array(shape)
     dy = delta[0]//2
     dx = delta[1]//2
     my = shape[0] + dy
     mx = shape[1] + dx
     return a[dy:my, dx:mx]
 
+
 def test():
-    import doctest, iraf_frame
+    import doctest
+    from . import iraf_frame
     return doctest.testmod(iraf_frame)
