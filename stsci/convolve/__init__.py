@@ -3,16 +3,7 @@ from __future__ import division
 from .convolve import *
 from . import iraf_frame
 
-
-try:
-    from .version import (__version__, __svn_revision__,
-                          __svn_full_info__, __setup_datetime__)
-except ImportError:
-    __version__ = ''
-    __svn_revision__ = ''
-    __svn_full_info__ = ''
-    __setup_datetime__ = None
-
+from .version import *
 
 try:
     import stsci.tools.tester
