@@ -1,3 +1,16 @@
+/*
+* This is a replacement for the numarray compatibility functions that
+* are missing from later versions of numpy.
+*
+* If you have a C extension that is contained in a single source file:
+*   in your module init function:
+*       import_array()
+*   at the end of your source file:
+*       #include "numarray_capi.c"
+*
+* If you have a C extension that is contained in multiple source files:
+*   see http://docs.scipy.org/doc/numpy/reference/c-api.array.html#importing-the-api
+*/
 #include <Python.h>
 
 #include "numpy/npy_3kcompat.h"
@@ -179,6 +192,7 @@ _exit:
 /**********************************************************************/
 /*  Numarray Interface Functions                                      */
 /**********************************************************************/
+
 PyArrayObject*
 NA_InputArray(PyObject *a, NAType t, int requires)
 {

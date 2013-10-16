@@ -367,8 +367,18 @@ PyMODINIT_FUNC init_lineshape(void)
     d = PyModule_GetDict(m);
     _Error = PyErr_NewException("_lineshape.error", NULL, NULL);
     PyDict_SetItemString(d, "error", _Error);
+    /*
+    * gain access to the numpy API
+    */
+    import_array();
 }
 
+
+/*
+* This is a compatibility mode to replace the numarray interfaces that
+* are removed from later versions of numpy
+*/
+#include "numarray_capi.c"
 
 
 /*

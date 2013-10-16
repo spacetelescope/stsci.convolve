@@ -678,7 +678,17 @@ PyMODINIT_FUNC init_correlate(void)
     PyObject *m, *d;
     m = Py_InitModule("_correlate", _correlateMethods);
     d = PyModule_GetDict(m);
+    /*
+    * gain access to the numpy API
+    */
+    import_array();
 }
+
+/*
+* This is a compatibility mode to replace the numarray interfaces that
+* are removed from later versions of numpy
+*/
+#include "numarray_capi.c"
 
 /*
  * Local Variables:
