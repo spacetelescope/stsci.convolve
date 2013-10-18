@@ -29,7 +29,7 @@
 
 #include <math.h>
 
-#include "numpy/libnumarray.h"
+#include "libarray.h"
 
 
 #define sqr(x) ((x)*(x))
@@ -46,7 +46,7 @@
 
 /*** C implementation ***/
 
-static void gauss(size_t n, double *x, double *y, double w, double xc) 
+static void gauss(size_t n, double *x, double *y, double w, double xc)
     /* Evaluate normalized Gauss profile around xc with FWHM w at all x_i,
        return in y. */
 {
@@ -57,7 +57,7 @@ static void gauss(size_t n, double *x, double *y, double w, double xc)
 
 
 
-static void lorentz(size_t n, double *x, double *y, double w, double xc) 
+static void lorentz(size_t n, double *x, double *y, double w, double xc)
     /* Evaluate normalized Lorentz profile around xc with FWHM w at all x_i,
        return in y. */
 {
@@ -125,7 +125,7 @@ static double humlicek_v12(double x, double y)
 }
 
 
-static void voigt(size_t n, double *x, double *y, double w[2], double xc) 
+static void voigt(size_t n, double *x, double *y, double w[2], double xc)
     /* Evaluate normalized Voigt profile at x around xc with Gaussian
      * linewidth contribution w[0] and Lorentzian linewidth
      * contribution w[1].
@@ -151,8 +151,8 @@ static void voigt(size_t n, double *x, double *y, double w[2], double xc)
 static PyObject *_Error;
 
 
-static PyObject * 
-_lineshape_gauss(PyObject *self, PyObject *args, PyObject *keywds) 
+static PyObject *
+_lineshape_gauss(PyObject *self, PyObject *args, PyObject *keywds)
 {
     int f;
     double w, xc = 0.0;
@@ -177,24 +177,24 @@ _lineshape_gauss(PyObject *self, PyObject *args, PyObject *keywds)
         Py_DECREF(ox);
         return PyFloat_FromDouble(ya[0]);
     } else {
-        /* array conversion */        
+        /* array conversion */
         if(! ((x = NA_InputArray(ox, tFloat64, C_ARRAY))
               && (y = NA_OptionalOutputArray(oy, tFloat64, C_ARRAY, x))))
             return 0;
         if(x->nd != 1)
             return PyErr_Format(_Error, "gauss: x must be scalar or 1d array.");
-        if (!NA_ShapeEqual(x, y))
+        if (!PyArray_SAMESHAPE(x, y))
             return PyErr_Format(_Error, "gauss: x and y numarray must have same length.");
 
         /* calculate profile */
 	{
-        double *xa = NA_OFFSETDATA(x);
-        double *ya = NA_OFFSETDATA(y);
+        double *xa = PyArray_DATA(x);
+        double *ya = PyArray_DATA(y);
         Py_BEGIN_ALLOW_THREADS;
         gauss(x->dimensions[0], xa, ya, w, xc);
         Py_END_ALLOW_THREADS;
 	}
-    
+
         /* cleanup and return */
         Py_XDECREF(x);
         return NA_ReturnOutput(oy, y);
@@ -203,8 +203,8 @@ _lineshape_gauss(PyObject *self, PyObject *args, PyObject *keywds)
 
 
 
-static PyObject * 
-_lineshape_lorentz(PyObject *self, PyObject *args, PyObject *keywds) 
+static PyObject *
+_lineshape_lorentz(PyObject *self, PyObject *args, PyObject *keywds)
 {
     int f;
     double w, xc = 0.0;
@@ -229,19 +229,19 @@ _lineshape_lorentz(PyObject *self, PyObject *args, PyObject *keywds)
         Py_DECREF(ox);
         return PyFloat_FromDouble(ya[0]);
     } else {
-        /* array conversion */        
+        /* array conversion */
         if(! ((x = NA_InputArray(ox, tFloat64, C_ARRAY))
               && (y = NA_OptionalOutputArray(oy, tFloat64, C_ARRAY, x))))
             return 0;
         if(x->nd != 1)
             return PyErr_Format(_Error, "lorentz: x must be scalar or 1d array.");
-        if (!NA_ShapeEqual(x, y))
+        if (!PyArray_SAMESHAPE(x, y))
             return PyErr_Format(_Error, "lorentz: x and y numarray must have same length.");
 
         /* calculate profile */
 	{
-        double *xa = NA_OFFSETDATA(x);
-        double *ya = NA_OFFSETDATA(y);
+        double *xa = PyArray_DATA(x);
+        double *ya = PyArray_DATA(y);
 
         Py_BEGIN_ALLOW_THREADS;
         lorentz(x->dimensions[0], xa, ya, w, xc);
@@ -256,8 +256,8 @@ _lineshape_lorentz(PyObject *self, PyObject *args, PyObject *keywds)
 
 
 
-static PyObject * 
-_lineshape_voigt(PyObject *self, PyObject *args, PyObject *keywds) 
+static PyObject *
+_lineshape_voigt(PyObject *self, PyObject *args, PyObject *keywds)
 {
     int f;
     double w[2], xc = 0.0;
@@ -286,19 +286,19 @@ _lineshape_voigt(PyObject *self, PyObject *args, PyObject *keywds)
         Py_DECREF(ox);
         return PyFloat_FromDouble(ya[0]);
     } else {
-        /* array conversion */        
+        /* array conversion */
         if(! ((x = NA_InputArray(ox, tFloat64, C_ARRAY))
               && (y = NA_OptionalOutputArray(oy, tFloat64, C_ARRAY, x))))
             return 0;
         if(x->nd != 1)
             return PyErr_Format(_Error, "voigt: x must be scalar or 1d array.");
-        if (!NA_ShapeEqual(x, y))
+        if (!PyArray_SAMESHAPE(x, y))
             return PyErr_Format(_Error, "voigt: x and y numarray must have same length.");
 
         /* calculate profile */
 	{
-        double *xa = NA_OFFSETDATA(x);
-        double *ya = NA_OFFSETDATA(y);
+        double *xa = PyArray_DATA(x);
+        double *ya = PyArray_DATA(y);
         Py_BEGIN_ALLOW_THREADS;
         voigt(x->dimensions[0], xa, ya, w, xc);
         Py_END_ALLOW_THREADS;
@@ -367,9 +367,18 @@ PyMODINIT_FUNC init_lineshape(void)
     d = PyModule_GetDict(m);
     _Error = PyErr_NewException("_lineshape.error", NULL, NULL);
     PyDict_SetItemString(d, "error", _Error);
-    import_libnumarray();
+    /*
+    * gain access to the numpy API
+    */
+    import_array();
 }
 
+
+/*
+* This is a compatibility mode to replace the numarray interfaces that
+* are removed from later versions of numpy
+*/
+#include "numarray_capi.c"
 
 
 /*

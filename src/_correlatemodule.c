@@ -5,7 +5,7 @@
 #include <signal.h>
 #include <ctype.h>
 
-#include "numpy/libnumarray.h"
+#include "libarray.h"
 
 typedef enum
 {
@@ -66,10 +66,10 @@ SlowPix(long r, long c, PixData *p)
 static int
 _reject_complex(PyObject *a)
 {
-    NumarrayType t;
-    if ((a == Py_None) || (a == NULL)) 
+    NAType t;
+    if ((a == Py_None) || (a == NULL))
         return 0;
-    t = NA_NumarrayType(a);
+    t = NA_NAType(a);
     if (t < 0) {
         PyErr_Clear();
         return 0;
@@ -137,15 +137,15 @@ Py_Correlate1d(PyObject *obj, PyObject *args)
         goto _fail;
     }
 
-    if (!NA_ShapeEqual(data, correlated)) {
+    if (!PyArray_SAMESHAPE(data, correlated)) {
         PyErr_Format(PyExc_ValueError,
                  "Correlate1d: data and output must have identical length.");
         goto _fail;
     }
 
-    Correlate1d(kernel->dimensions[0], NA_OFFSETDATA(kernel),
-            data->dimensions[0],   NA_OFFSETDATA(data),
-            NA_OFFSETDATA(correlated));
+    Correlate1d(kernel->dimensions[0], PyArray_DATA(kernel),
+            data->dimensions[0],   PyArray_DATA(data),
+            PyArray_DATA(correlated));
 
     Py_DECREF(kernel);
     Py_DECREF(data);
@@ -168,23 +168,23 @@ The region defined by rmin,rmax,cmin,cmax is assumed to contain only valid
 coordinates.  However, access to the input array is performed using SlowPix
 because pixels reachable via "kernel offsets" may be at invalid coordinates.
 */
-static void 
-SlowCorrelate2d(long rmin, long rmax, long cmin, long cmax, 
-          long krows, long kcols, Float64 *kernel, 
+static void
+SlowCorrelate2d(long rmin, long rmax, long cmin, long cmax,
+          long krows, long kcols, Float64 *kernel,
           PixData *pix, Float64 *output)
 {
     long kr, kc, r, c;
     long halfkrows = krows/2;
     long halfkcols = kcols/2;
 
-    for(r=rmin; r<rmax; r++) { 
+    for(r=rmin; r<rmax; r++) {
         for(c=cmin; c<cmax; c++) {
             Float64 temp = 0;
             for(kr=0; kr<krows; kr++) {
                 long pr = r + kr - halfkrows;
                 for(kc=0; kc<kcols; kc++) {
                     long pc = c + kc - halfkcols;
-                    temp += SlowPix(pr, pc, pix) * 
+                    temp += SlowPix(pr, pc, pix) *
                         kernel[kr*kcols+kc];
                 }
             }
@@ -193,15 +193,15 @@ SlowCorrelate2d(long rmin, long rmax, long cmin, long cmax,
     }
 }
 
-static void 
-Correlate2d(long krows, long kcols, Float64 *kernel, 
-        long drows, long dcols, Float64 *data, Float64 *correlated, 
+static void
+Correlate2d(long krows, long kcols, Float64 *kernel,
+        long drows, long dcols, Float64 *data, Float64 *correlated,
         PixMode mode, Float64 cval)
 {
     long ki, kj, di, dj;
     long halfkrows = krows/2;
     long halfkcols = kcols/2;
-    
+
     PixData pix;
     pix.mode = mode;
     pix.data = data;
@@ -211,11 +211,11 @@ Correlate2d(long krows, long kcols, Float64 *kernel,
 
     /* Compute the boundaries using SlowPix */
 
-    SlowCorrelate2d(0, halfkrows, 0, dcols, 
+    SlowCorrelate2d(0, halfkrows, 0, dcols,
               krows, kcols, kernel, &pix, correlated); /* top */
-    SlowCorrelate2d(drows-halfkrows, drows, 0, dcols, 
+    SlowCorrelate2d(drows-halfkrows, drows, 0, dcols,
               krows, kcols, kernel, &pix, correlated); /* bottom */
-    SlowCorrelate2d(halfkrows, drows-halfkrows, 0, halfkcols, 
+    SlowCorrelate2d(halfkrows, drows-halfkrows, 0, halfkcols,
               krows, kcols, kernel, &pix, correlated); /* left */
     SlowCorrelate2d(halfkrows, drows-halfkrows, dcols-halfkcols, dcols,
               krows, kcols, kernel, &pix, correlated); /* right */
@@ -228,7 +228,7 @@ Correlate2d(long krows, long kcols, Float64 *kernel,
                 long pi = di + ki - halfkrows;
                 for(kj=0; kj<kcols; kj++) {
                     long pj = dj + kj - halfkcols;
-                    temp += data[pi*dcols+pj] * 
+                    temp += data[pi*dcols+pj] *
                         kernel[ki*kcols+kj];
                 }
             }
@@ -247,13 +247,13 @@ Py_Correlate2d(PyObject *obj, PyObject *args, PyObject *kw)
     char       *keywds[] = { "kernel", "data", "output", "mode", "cval", NULL };
 
     if (!PyArg_ParseTupleAndKeywords(
-            args, kw, "OO|Oid:Correlate2d", keywds, 
+            args, kw, "OO|Oid:Correlate2d", keywds,
             &okernel, &odata, &ocorrelated, &mode, &cval))
         return NULL;
 
     if ((mode < PIX_NEAREST) || (mode > PIX_CONSTANT))
         return PyErr_Format(PyExc_ValueError,
-                "Correlate2d: mode value not in range(%d,%d)", 
+                "Correlate2d: mode value not in range(%d,%d)",
                     PIX_NEAREST, PIX_CONSTANT);
 
     /* Align, Byteswap, Contiguous, Typeconvert */
@@ -263,7 +263,7 @@ Py_Correlate2d(PyObject *obj, PyObject *args, PyObject *kw)
     if (!kernel || !data)
         goto _fail;
 
-    correlated = NA_OptionalOutputArray(ocorrelated, tFloat64, C_ARRAY, 
+    correlated = NA_OptionalOutputArray(ocorrelated, tFloat64, C_ARRAY,
                         data);
 
     if (!correlated)
@@ -274,21 +274,21 @@ Py_Correlate2d(PyObject *obj, PyObject *args, PyObject *kw)
         goto _fail;
     }
 
-    if (!NA_ShapeEqual(data, correlated)) {
+    if (!PyArray_SAMESHAPE(data, correlated)) {
         PyErr_Format(PyExc_ValueError,
                  "Correlate2d: data and output numarray need identical shapes.");
         goto _fail;
-    }    
+    }
 
-    if (_reject_complex(okernel) || _reject_complex(odata) || 
+    if (_reject_complex(okernel) || _reject_complex(odata) ||
         _reject_complex(ocorrelated))
         goto _fail;
-        
-    Correlate2d(kernel->dimensions[0], kernel->dimensions[1], 
-            NA_OFFSETDATA(kernel),
-            data->dimensions[0], data->dimensions[1], 
-            NA_OFFSETDATA(data),
-            NA_OFFSETDATA(correlated), 
+
+    Correlate2d(kernel->dimensions[0], kernel->dimensions[1],
+            PyArray_DATA(kernel),
+            data->dimensions[0], data->dimensions[1],
+            PyArray_DATA(data),
+            PyArray_DATA(correlated),
             mode, cval);
 
     Py_DECREF(kernel);
@@ -327,7 +327,7 @@ Py_Shift2d(PyObject *obj, PyObject *args, PyObject *kw)
     int           dx, dy;
     Float64       cval = 0;
     int           mode = PIX_NEAREST;
-    char          *keywds[] = { "data", "dx", "dy", 
+    char          *keywds[] = { "data", "dx", "dy",
                     "output", "mode", "cval", NULL };
 
     if (!PyArg_ParseTupleAndKeywords(args, kw, "Oii|Oid:Shift2d", keywds,
@@ -336,12 +336,12 @@ Py_Shift2d(PyObject *obj, PyObject *args, PyObject *kw)
 
     if ((mode < PIX_NEAREST) || (mode > PIX_CONSTANT))
         return PyErr_Format(PyExc_ValueError,
-                "Shift2d: mode value not in range(%d,%d)", 
+                "Shift2d: mode value not in range(%d,%d)",
                     PIX_NEAREST, PIX_CONSTANT);
 
     /* Align, Byteswap, Contiguous, Typeconvert */
     data    = NA_InputArray(odata, tFloat64, C_ARRAY);
-    output  = NA_OptionalOutputArray(ooutput, tFloat64, C_ARRAY, 
+    output  = NA_OptionalOutputArray(ooutput, tFloat64, C_ARRAY,
                      data);
 
     if (!data || !output)
@@ -356,16 +356,16 @@ Py_Shift2d(PyObject *obj, PyObject *args, PyObject *kw)
         goto _fail;
     }
 
-    if (!NA_ShapeEqual(data, output)) {
+    if (!PyArray_SAMESHAPE(data, output)) {
         PyErr_Format(PyExc_ValueError,
                  "Shift2d: data and output numarray need identical shapes.");
         goto _fail;
     }
 
     /* Invert sign of deltas to match sense of 2x2 correlation. */
-    Shift2d( data->dimensions[0], data->dimensions[1], NA_OFFSETDATA(data),
-         -dx, -dy, NA_OFFSETDATA(output), mode, cval);
-    
+    Shift2d( data->dimensions[0], data->dimensions[1], PyArray_DATA(data),
+         -dx, -dy, PyArray_DATA(output), mode, cval);
+
     Py_XDECREF(data);
 
     /* Align, Byteswap, Contiguous, Typeconvert */
@@ -389,7 +389,7 @@ struct s_BoxData {
 };
 
 static Float64
-SlowSumCol(long r, long c, BoxData *D) 
+SlowSumCol(long r, long c, BoxData *D)
 {
     Float64 sum = 0;
     long i, krows = D->krows;
@@ -411,7 +411,7 @@ SlowSumBox(long r, long c, BoxData *D)
 }
 
 static Float64
-FastSumCol(long r, long c, BoxData *D) 
+FastSumCol(long r, long c, BoxData *D)
 {
     Float64 sum = 0;
     long krows = D->krows;
@@ -461,7 +461,7 @@ BoxFunc(long rmin, long rmax, long cmin, long cmax, Float64 *output, BoxData *D)
     cmin = bound(cmin, cols);
     cmax = bound(cmax, cols);
 
-    for(r=rmin; r<rmax; r++) {  
+    for(r=rmin; r<rmax; r++) {
         Float64 sum = D->sumbox(r - krows2, cmin - kcols2, D);
         for(c=cmin; c<cmax; c++) {
             output[r*cols + c] = sum;
@@ -489,7 +489,7 @@ BoxFunc(long rmin, long rmax, long cmin, long cmax, Float64 *output, BoxData *D)
                   [b0]   [b1]                       g    "           b1
                                   [a0] S [a1]                       a    "           a0
                    a      d                         d is actually in a1
- 
+
     a0 = b0 - b + a            column vector a0 is b0 dropping top element b and adding bottom a
     a1 = b1 - g + d            column vector a1 is b1 dropping top element g and adding bottom d
 
@@ -514,7 +514,7 @@ BoxFuncI(long rmin, long rmax, long cmin, long cmax, Float64 *output, BoxData *D
     cmin = bound(cmin, cols);
     cmax = bound(cmax, cols);
 
-    for(r=rmin; r<rmax; r++) {  
+    for(r=rmin; r<rmax; r++) {
         long top    = r - krows2 - 1;
         long bottom = r + krows2 - krowseven;
 
@@ -535,8 +535,8 @@ BoxFuncI(long rmin, long rmax, long cmin, long cmax, Float64 *output, BoxData *D
     }
 }
 
-static void 
-Boxcar2d(long krows, long kcols, long rows, long cols, Float64 *data, 
+static void
+Boxcar2d(long krows, long kcols, long rows, long cols, Float64 *data,
      Float64 *output, PixMode mode, Float64 constval)
 {
     long krows2 = krows/2;
@@ -556,7 +556,7 @@ Boxcar2d(long krows, long kcols, long rows, long cols, Float64 *data,
     D.kcols = kcols;
     D.sumcol = SlowSumCol;
     D.sumbox = SlowSumBox;
-    
+
     /* The next 4 calls compute boxcars on the boundary pixels with
        different modes detemining what data values are fetched when "out
        of bounds".  Presumably, this is a small minority of the data and
@@ -565,25 +565,25 @@ Boxcar2d(long krows, long kcols, long rows, long cols, Float64 *data,
 
     /* top whole plus one */
     BoxFunc(0, krows2+2, 0, cols, output, &D);
-    
+
     /* bottom whole */
     BoxFunc(rows-krows2+krowseven, rows, 0, cols, output, &D);
-    
+
     /* left whole plus one */
     BoxFunc(0, rows, 0, kcols2+2, output, &D);
-    
+
     /* right whole */
     BoxFunc(0, rows, cols-kcols2+kcolseven, cols, output, &D);
 
     /* Do the boxcar on the "center" data, the data where the boxcar is
        always "in bounds".  Presumably, this is the bulk of the data so
-       this should be fast.  
+       this should be fast.
     */
     D.sumcol = FastSumCol;
     D.sumbox = FastSumBox;
 
-    BoxFuncI( krows2+2, rows-krows2+krowseven, 
-          kcols2+2, cols-kcols2+kcolseven, 
+    BoxFuncI( krows2+2, rows-krows2+krowseven,
+          kcols2+2, cols-kcols2+kcolseven,
           output, &D);
 
     karea = kcols * krows;
@@ -599,10 +599,10 @@ Py_Boxcar2d(PyObject *obj, PyObject *args, PyObject *kw)
     PyArrayObject *data, *output;
     int        krows, kcols, mode=PIX_NEAREST;
     Float64    cval = 0;
-    char       *keywds[] = { "data", "krows", "kcols", 
+    char       *keywds[] = { "data", "krows", "kcols",
                  "output", "mode", "cval", NULL };
 
-    if (!PyArg_ParseTupleAndKeywords(args, kw, "Oii|Oid:Boxcar2d", keywds, 
+    if (!PyArg_ParseTupleAndKeywords(args, kw, "Oii|Oid:Boxcar2d", keywds,
              &odata, &krows, &kcols, &ooutput, &mode, &cval))
         return NULL;
 
@@ -622,7 +622,7 @@ Py_Boxcar2d(PyObject *obj, PyObject *args, PyObject *kw)
 
     if ((mode < PIX_NEAREST) || (mode > PIX_CONSTANT)) {
         PyErr_Format(PyExc_ValueError,
-                 "Boxcar2d: mode value not in range(%d,%d)", 
+                 "Boxcar2d: mode value not in range(%d,%d)",
                  PIX_NEAREST, PIX_CONSTANT);
         goto _fail;
     }
@@ -633,7 +633,7 @@ Py_Boxcar2d(PyObject *obj, PyObject *args, PyObject *kw)
         goto _fail;
     }
 
-    if (!NA_ShapeEqual(data, output)) {
+    if (!PyArray_SAMESHAPE(data, output)) {
         PyErr_Format(PyExc_ValueError,
                  "Boxcar2d: data and output numarray need identical shapes.");
         goto _fail;
@@ -650,8 +650,8 @@ Py_Boxcar2d(PyObject *obj, PyObject *args, PyObject *kw)
         goto _fail;
     }
 
-    Boxcar2d(krows, kcols, data->dimensions[0], data->dimensions[1], 
-         NA_OFFSETDATA(data), NA_OFFSETDATA(output), mode, cval);
+    Boxcar2d(krows, kcols, data->dimensions[0], data->dimensions[1],
+         PyArray_DATA(data), PyArray_DATA(output), mode, cval);
 
     Py_XDECREF(data);
 
@@ -664,9 +664,9 @@ Py_Boxcar2d(PyObject *obj, PyObject *args, PyObject *kw)
 }
 
 static PyMethodDef _correlateMethods[] = {
-    {"Correlate1d", Py_Correlate1d, METH_VARARGS}, 
+    {"Correlate1d", Py_Correlate1d, METH_VARARGS},
     {"Correlate2d", (PyCFunction) Py_Correlate2d, METH_VARARGS | METH_KEYWORDS},
-    {"Shift2d", (PyCFunction) Py_Shift2d, METH_VARARGS | METH_KEYWORDS, 
+    {"Shift2d", (PyCFunction) Py_Shift2d, METH_VARARGS | METH_KEYWORDS,
      "Shift2d shifts and image by an integer number of pixels, and uses IRAF compatible modes for the boundary pixels."},
     {"Boxcar2d", (PyCFunction) Py_Boxcar2d, METH_VARARGS | METH_KEYWORDS,
     "Boxcar2d computes a sliding 2D boxcar average on a 2D array"},
@@ -678,8 +678,17 @@ PyMODINIT_FUNC init_correlate(void)
     PyObject *m, *d;
     m = Py_InitModule("_correlate", _correlateMethods);
     d = PyModule_GetDict(m);
-    import_libnumarray();
+    /*
+    * gain access to the numpy API
+    */
+    import_array();
 }
+
+/*
+* This is a compatibility mode to replace the numarray interfaces that
+* are removed from later versions of numpy
+*/
+#include "numarray_capi.c"
 
 /*
  * Local Variables:
