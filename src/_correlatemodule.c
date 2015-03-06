@@ -116,15 +116,11 @@ Py_Correlate1d(PyObject *obj, PyObject *args)
         return NULL;
 
     /* Align, Byteswap, Contiguous, Typeconvert */
-    kernel    = NA_InputArray(okernel, tFloat64, C_ARRAY);
-    data    = NA_InputArray(odata, tFloat64, C_ARRAY);
-
-    if (!kernel || !data)
-        goto _fail;
-
+    kernel     = NA_InputArray(okernel, tFloat64, C_ARRAY);
+    data       = NA_InputArray(odata, tFloat64, C_ARRAY);
     correlated = NA_OptionalOutputArray(ocorrelated, tFloat64, C_ARRAY,
                                         data);
-    if (!correlated)
+    if (!kernel || !data || !correlated)
         goto _fail;
 
     if (_reject_complex(okernel) || _reject_complex(odata) ||
@@ -257,16 +253,12 @@ Py_Correlate2d(PyObject *obj, PyObject *args, PyObject *kw)
                     PIX_NEAREST, PIX_CONSTANT);
 
     /* Align, Byteswap, Contiguous, Typeconvert */
-    kernel    = NA_InputArray(okernel, tFloat64, C_ARRAY);
-    data    = NA_InputArray(odata, tFloat64, C_ARRAY);
-
-    if (!kernel || !data)
-        goto _fail;
-
+    kernel     = NA_InputArray(okernel, tFloat64, C_ARRAY);
+    data       = NA_InputArray(odata, tFloat64, C_ARRAY);
     correlated = NA_OptionalOutputArray(ocorrelated, tFloat64, C_ARRAY,
                         data);
 
-    if (!correlated)
+    if (!kernel || !data || !correlated)
         goto _fail;
 
     if ((kernel->nd != 2) || (data->nd != 2) || (correlated->nd != 2)) {
@@ -673,15 +665,43 @@ static PyMethodDef _correlateMethods[] = {
     {NULL, NULL} /* Sentinel */
 };
 
-PyMODINIT_FUNC init_correlate(void)
+#if PY_MAJOR_VERSION >= 3
+static struct PyModuleDef moduledef = {
+  PyModuleDef_HEAD_INIT,
+  "_correlate",        /* m_name */
+  "Correlate module",  /* m_doc */
+  -1,                  /* m_size */
+  _correlateMethods,   /* m_methods */
+  NULL,                /* m_reload */
+  NULL,                /* m_traverse */
+  NULL,                /* m_clear */
+  NULL,                /* m_free */
+};
+#endif
+
+PyMODINIT_FUNC
+#if PY_MAJOR_VERSION >= 3
+PyInit__correlate(void)
+#else
+init_correlate(void)
+#endif
 {
     PyObject *m, *d;
+#if PY_MAJOR_VERSION >= 3
+    m = PyModule_Create(&moduledef);
+#else
     m = Py_InitModule("_correlate", _correlateMethods);
+#endif
     d = PyModule_GetDict(m);
     /*
     * gain access to the numpy API
     */
     import_array();
+#if PY_MAJOR_VERSION >= 3
+	return m;
+#else
+	return;
+#endif
 }
 
 /*

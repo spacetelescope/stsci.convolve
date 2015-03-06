@@ -26,6 +26,7 @@
  */
 
 #include "Python.h"
+#include "numpy/npy_3kcompat.h"
 
 #include <math.h>
 
@@ -42,7 +43,6 @@
 #if !defined(M_LN2)
 #define M_LN2 0.69314718055994530942
 #endif
-
 
 /*** C implementation ***/
 
@@ -171,6 +171,7 @@ _lineshape_gauss(PyObject *self, PyObject *args, PyObject *keywds)
             xa[0] = PyFloat_AS_DOUBLE(ox);
         else
             xa[0] = (double)PyInt_AS_LONG(ox);
+
         Py_BEGIN_ALLOW_THREADS;
         gauss(1, xa, ya, w, xc);
         Py_END_ALLOW_THREADS;
@@ -355,15 +356,37 @@ static PyMethodDef _lineshape_Methods[] = {
     {NULL, NULL, 0, ""}
 };
 
+#if PY_MAJOR_VERSION >= 3
+static struct PyModuleDef moduledef = {
+  PyModuleDef_HEAD_INIT,
+  "_lineshape",        /* m_name */
+  "Line shape module", /* m_doc */
+  -1,                  /* m_size */
+  _lineshape_Methods,  /* m_methods */
+  NULL,                /* m_reload */
+  NULL,                /* m_traverse */
+  NULL,                /* m_clear */
+  NULL,                /* m_free */
+};
+#endif
 
 
 
 /*** module initialization ***/
 
-PyMODINIT_FUNC init_lineshape(void)
+PyMODINIT_FUNC
+#if PY_MAJOR_VERSION >= 3
+PyInit__lineshape(void)
+#else
+init_lineshape(void)
+#endif
 {
     PyObject *m, *d;
+#if PY_MAJOR_VERSION >= 3
+    m = PyModule_Create(&moduledef);
+#else
     m = Py_InitModule("_lineshape", _lineshape_Methods);
+#endif
     d = PyModule_GetDict(m);
     _Error = PyErr_NewException("_lineshape.error", NULL, NULL);
     PyDict_SetItemString(d, "error", _Error);
@@ -371,6 +394,11 @@ PyMODINIT_FUNC init_lineshape(void)
     * gain access to the numpy API
     */
     import_array();
+#if PY_MAJOR_VERSION >= 3
+	return m;
+#else
+	return;
+#endif
 }
 
 
