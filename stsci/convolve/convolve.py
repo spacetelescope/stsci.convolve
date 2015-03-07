@@ -65,7 +65,7 @@ def correlate(data, kernel, mode=FULL):
     even = (lenk % 2 == 0)
     kdata = [0] * lenk
 
-    if mode in convolution_modes.keys():
+    if mode in convolution_modes:
         mode = convolution_modes[ mode ]
 
     result_type = max(kernel.dtype.name, data.dtype.name)
@@ -212,7 +212,7 @@ def _fix_data_kernel(data, kernel):
     and panics if there's no good order.
     """
 
-    data, kernel = map(np.asarray, [data, kernel])
+    data, kernel = list(map(np.asarray, [data, kernel]))
     if np.rank(data) == 0:
         data.shape = (1,1)
     elif np.rank(data) == 1:
@@ -412,7 +412,7 @@ def _fbroadcast(f, N, shape, args, params=()):
     """
 
     if len(shape) == N:
-        apply(f, tuple(args)+params)
+        f(*tuple(args)+params)
     else:
         for i in range(shape[0]):
             _fbroadcast(f, N, shape[1:], [x[i] for x in args], params)

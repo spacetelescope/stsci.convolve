@@ -32,7 +32,6 @@
 /**********************************************************************/
 /*  Numarray Supporting Functions                                     */
 /**********************************************************************/
-static PyObject *_Error;
 
 int
 NA_NumArrayCheck(PyObject *obj) {
@@ -160,6 +159,7 @@ NA_maxType(PyObject *seq)
     return rval;
 }
 
+int
 NA_NAType(PyObject *seq)
 {
     int maxtype = NA_maxType(seq);
