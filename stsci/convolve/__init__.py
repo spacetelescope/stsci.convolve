@@ -11,4 +11,3 @@ try:
         stsci.tools.tester.test(modname=__name__, *args, **kwds)
 except ImportError:
     pass
-
