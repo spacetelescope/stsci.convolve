@@ -118,9 +118,13 @@ Py_Correlate1d(PyObject *obj, PyObject *args)
     /* Align, Byteswap, Contiguous, Typeconvert */
     kernel     = NA_InputArray(okernel, tFloat64, C_ARRAY);
     data       = NA_InputArray(odata, tFloat64, C_ARRAY);
+
+    if (!kernel || !data)
+        goto _fail;
+
     correlated = NA_OptionalOutputArray(ocorrelated, tFloat64, C_ARRAY,
                                         data);
-    if (!kernel || !data || !correlated)
+    if (!correlated)
         goto _fail;
 
     if (_reject_complex(okernel) || _reject_complex(odata) ||
@@ -255,10 +259,14 @@ Py_Correlate2d(PyObject *obj, PyObject *args, PyObject *kw)
     /* Align, Byteswap, Contiguous, Typeconvert */
     kernel     = NA_InputArray(okernel, tFloat64, C_ARRAY);
     data       = NA_InputArray(odata, tFloat64, C_ARRAY);
+
+    if (!kernel || !data)
+        goto _fail;
+
     correlated = NA_OptionalOutputArray(ocorrelated, tFloat64, C_ARRAY,
                         data);
 
-    if (!kernel || !data || !correlated)
+    if (!correlated)
         goto _fail;
 
     if ((kernel->nd != 2) || (data->nd != 2) || (correlated->nd != 2)) {
