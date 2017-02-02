@@ -21,11 +21,11 @@ convolution_modes = {
 
 def _condition_inputs(data, kernel):
     data, kernel = np.asarray(data), np.asarray(kernel)
-    if np.rank(data) == 0:
+    if data.ndim == 0:
         data.shape = (1,)
-    if np.rank(kernel) == 0:
+    if kernel.ndim == 0:
         kernel.shape = (1,)
-    if np.rank(data) > 1 or np.rank(kernel) > 1:
+    if data.ndim > 1 or kernel.ndim > 1:
         raise ValueError("arrays must be 1D")
     if len(data) < len(kernel):
         data, kernel = kernel, data
@@ -213,13 +213,13 @@ def _fix_data_kernel(data, kernel):
     """
 
     data, kernel = list(map(np.asarray, [data, kernel]))
-    if np.rank(data) == 0:
+    if data.ndim == 0:
         data.shape = (1,1)
-    elif np.rank(data) == 1:
+    elif data.ndim == 1:
         data.shape = (1,) + data.shape
-    if np.rank(kernel) == 0:
+    if kernel.ndim == 0:
         kernel.shape = (1,1)
-    elif np.rank(kernel) == 1:
+    elif kernel.ndim == 1:
         kernel.shape = (1,) + kernel.shape
     if (kernel.shape[0] > data.shape[0] and
         kernel.shape[1] > data.shape[1]):
